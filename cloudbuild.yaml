@@ -1,0 +1,12 @@
+steps:
+  # Step 1: Build the container image using Dockerfile
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [ "build", "-t", "gcr.io/blackcatdev/pet_cam_server/${_BUILD_NUMBER}", "." ]
+
+  # Step 2: Push the container image to Google Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "push", "gcr.io/blackcatdev/pet_cam_server/${_BUILD_NUMBER}" ]
+
+substitutions:
+  _BUILD_NUMBER: "0.0.3"
