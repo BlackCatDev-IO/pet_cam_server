@@ -7,6 +7,8 @@ import socketio
 class EventName(Enum):
     send = 'send'
     receive = 'receive'
+    room_joined = 'room_joined'
+    room_message = 'room_message'
 
 
 sio = socketio.AsyncServer(
@@ -18,8 +20,8 @@ sio = socketio.AsyncServer(
 
 
 @sio.event
-async def connect(sid, environ):
-    await sio.emit('status', {'data': 'Connected', 'count': 0}, room=sid)
+async def connect(sid: str, environ):
+    await sio.emit('status', {'data': 'Connected', 'count': 0})
 
 
 @sio.event
@@ -36,24 +38,41 @@ async def send(sid, message):
 
 
 @sio.event
-async def join_room(sid, message):
+async def join_room(sid: str, message: dict):
     room = message['room']
     response = f'Entered room: {room} with sid {sid}'
     print(response)
     await sio.enter_room(sid, room)
-    await sio.emit('my_response', {'data': response},
-                   room=sid)
+    await sio.emit(EventName.room_joined.name, {'data': response},
+                   room=room, skip_sid=sid)
 
 
 @sio.event
-async def leave_room(sid, message):
+async def send_webrtc_offer(sid: str, message: dict):
+    room = message['room']
+    print(f'send_webrtc_offer received in room {room}')
+    await sio.emit('offer', message,
+                   room=room, skip_sid=sid)
+
+
+@sio.event
+async def room_message(sid: str, message: dict):
+    room = message['room']
+    print(f'New message in room {room} from SID: {sid}')
+
+    await sio.emit(EventName.room_message.name, message,
+                   room=room, skip_sid=sid)
+
+
+@sio.event
+async def leave_room(sid: str, message: dict):
     await sio.leave_room(sid, message['room'])
     await sio.emit('my_response', {'data': 'Left room: ' + message['room']},
                    room=sid)
 
 
 @sio.event
-async def close_room(sid, message):
+async def close_room(sid: str, message: dict):
     await sio.emit('my_response',
                    {'data': 'Room ' + message['room'] + ' is closing.'},
                    room=message['room'])
