@@ -21,7 +21,7 @@ sio = socketio.AsyncServer(
 
 @sio.event
 async def connect(sid: str, environ):
-    await sio.emit('status', {'data': 'Connected', 'count': 0})
+    await sio.emit('status', {'data': 'Connected'})
 
 
 @sio.event
@@ -50,17 +50,27 @@ async def join_room(sid: str, message: dict):
 @sio.event
 async def send_webrtc_offer(sid: str, message: dict):
     room = message['room']
+    data = message['data']
     print(f'send_webrtc_offer received in room {room}')
-    await sio.emit('offer', message,
+    await sio.emit('offer', data,
                    room=room, skip_sid=sid)
 
 
 @sio.event
 async def room_message(sid: str, message: dict):
     room = message['room']
-    print(f'New message in room {room} from SID: {sid}')
+    data = message['data']
+    output_message = EventName.room_message.name
+    if message['outputEvent'] is not None:
+        output_message = message['outputEvent']
+        print(output_message)
+    else:
+        print('no output message defined')
 
-    await sio.emit(EventName.room_message.name, message,
+    print(f'New message in room {room} from SID: {sid}')
+    print(f'emitting in {EventName.room_message.name} message {message}')
+ 
+    await sio.emit(output_message, data,
                    room=room, skip_sid=sid)
 
 
